@@ -22,7 +22,7 @@ interface RequestBody {
 }
 
 async function fetchWeather(lat: number, lon: number): Promise<WeatherData> {
-  const apiKey = Deno.env.get('OPENWEATHERMAP_API_KEY');
+  const apiKey = Deno.env.get("OPENWEATHERMAP_API_KEY");
 
   if (!apiKey) {
     return {
@@ -30,7 +30,7 @@ async function fetchWeather(lat: number, lon: number): Promise<WeatherData> {
       feels_like: 30,
       humidity: 75,
       rain_probability: 60,
-      description: 'partly cloudy with chance of rain',
+      description: "partly cloudy with chance of rain",
       wind_speed: 15,
     };
   }
@@ -39,7 +39,7 @@ async function fetchWeather(lat: number, lon: number): Promise<WeatherData> {
 
   const response = await fetch(url);
   if (!response.ok) {
-    throw new Error('Failed to fetch weather data');
+    throw new Error("Failed to fetch weather data");
   }
 
   const data = await response.json();
@@ -59,14 +59,14 @@ async function fetchWeather(lat: number, lon: number): Promise<WeatherData> {
     feels_like: data.main.feels_like,
     humidity: data.main.humidity,
     rain_probability: rainProbability,
-    description: data.weather[0]?.description || 'clear',
+    description: data.weather[0]?.description || "clear",
     wind_speed: data.wind.speed * 3.6,
   };
 }
 
 async function getStylistAdvice(outfit: string, weather: WeatherData): Promise<{ verdict: string; advice: string }> {
-  const apiKey = Deno.env.get('LLM_API_KEY');
-  const apiUrl = Deno.env.get('LLM_API_URL');
+  const apiKey = Deno.env.get("LLM_API_KEY");
+  const apiUrl = Deno.env.get("LLM_API_URL");
 
   if (!apiKey || !apiUrl) {
     return generateLocalAdvice(outfit, weather);
@@ -90,14 +90,15 @@ ADVICE: [Your one sentence of practical advice]`;
 
   try {
     const response = await fetch(apiUrl, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        prompt,
+        model: "llama3-8b-8192",
         max_tokens: 150,
+        messages: [{ role: "user", content: prompt }],
       }),
     });
 
@@ -106,13 +107,13 @@ ADVICE: [Your one sentence of practical advice]`;
     }
 
     const data = await response.json();
-    const text = data.choices?.[0]?.text || data.response || data.message || '';
+    const text = data.choices?.[0]?.message?.content || "";
 
     const verdictMatch = text.match(/VERDICT:\s*(SAFE|WARNING|DISASTER)/i);
     const adviceMatch = text.match(/ADVICE:\s*(.+)/i);
 
     return {
-      verdict: verdictMatch ? verdictMatch[1].toUpperCase() : 'WARNING',
+      verdict: verdictMatch ? verdictMatch[1].toUpperCase() : "WARNING",
       advice: adviceMatch ? adviceMatch[1].trim() : text.trim(),
     };
   } catch {
@@ -123,66 +124,66 @@ ADVICE: [Your one sentence of practical advice]`;
 function generateLocalAdvice(outfit: string, weather: WeatherData): { verdict: string; advice: string } {
   const outfitLower = outfit.toLowerCase();
   const issues: string[] = [];
-  let verdict = 'SAFE';
+  let verdict = "SAFE";
 
   if (weather.rain_probability > 50) {
-    if (outfitLower.includes('white') || outfitLower.includes('cream') || outfitLower.includes('light')) {
-      issues.push('light colors will get muddy');
-      verdict = 'DISASTER';
-    } else if (outfitLower.includes('linen') || outfitLower.includes('silk')) {
-      issues.push('delicate fabrics will suffer in rain');
-      verdict = 'WARNING';
+    if (outfitLower.includes("white") || outfitLower.includes("cream") || outfitLower.includes("light")) {
+      issues.push("light colors will get muddy");
+      verdict = "DISASTER";
+    } else if (outfitLower.includes("linen") || outfitLower.includes("silk")) {
+      issues.push("delicate fabrics will suffer in rain");
+      verdict = "WARNING";
     }
   }
 
   if (weather.humidity > 70) {
-    if (outfitLower.includes('dewy') || outfitLower.includes('glowy') || outfitLower.includes('glow')) {
-      issues.push('dewy makeup will melt in high humidity');
-      verdict = verdict === 'SAFE' ? 'WARNING' : verdict;
+    if (outfitLower.includes("dewy") || outfitLower.includes("glowy") || outfitLower.includes("glow")) {
+      issues.push("dewy makeup will melt in high humidity");
+      verdict = verdict === "SAFE" ? "WARNING" : verdict;
     }
-    if (outfitLower.includes('matte')) {
-      issues = issues.filter(i => !i.includes('makeup'));
+    if (outfitLower.includes("matte")) {
+      issues = issues.filter((i) => !i.includes("makeup"));
     }
   }
 
   if (weather.temperature > 30) {
-    if (outfitLower.includes('heavy') || outfitLower.includes('wool') || outfitLower.includes('thick')) {
-      issues.push('heavy fabrics are too warm');
-      verdict = 'WARNING';
+    if (outfitLower.includes("heavy") || outfitLower.includes("wool") || outfitLower.includes("thick")) {
+      issues.push("heavy fabrics are too warm");
+      verdict = "WARNING";
     }
   }
 
   if (weather.temperature < 20) {
-    if (outfitLower.includes('shorts') || outfitLower.includes('sleeveless') || outfitLower.includes('tank')) {
-      issues.push('too cold for summer clothes');
-      verdict = 'WARNING';
+    if (outfitLower.includes("shorts") || outfitLower.includes("sleeveless") || outfitLower.includes("tank")) {
+      issues.push("too cold for summer clothes");
+      verdict = "WARNING";
     }
   }
 
   if (weather.wind_speed > 20) {
-    if (outfitLower.includes('skirt') || outfitLower.includes('dress')) {
-      issues.push('windy conditions make skirts risky');
-      verdict = verdict === 'SAFE' ? 'WARNING' : verdict;
+    if (outfitLower.includes("skirt") || outfitLower.includes("dress")) {
+      issues.push("windy conditions make skirts risky");
+      verdict = verdict === "SAFE" ? "WARNING" : verdict;
     }
   }
 
-  if (verdict === 'SAFE') {
+  if (verdict === "SAFE") {
     return {
-      verdict: 'SAFE',
-      advice: 'Your outfit works well with today\'s weather. You\'re good to go!',
+      verdict: "SAFE",
+      advice: "Your outfit works well with today's weather. You're good to go!",
     };
   }
 
   const adviceMap: Record<string, string> = {
-    'light colors will get muddy': 'Swap to dark pants or bring a waterproof layer.',
-    'delicate fabrics will suffer in rain': 'Choose synthetic blends that dry quickly.',
-    'dewy makeup will melt in high humidity': 'Use a matte setting spray or switch to powder foundation.',
-    'heavy fabrics are too warm': 'Opt for breathable cotton or linen instead.',
-    'too cold for summer clothes': 'Add a light jacket or cardigan.',
-    'windy conditions make skirts risky': 'Wear shorts underneath or choose pants instead.',
+    "light colors will get muddy": "Swap to dark pants or bring a waterproof layer.",
+    "delicate fabrics will suffer in rain": "Choose synthetic blends that dry quickly.",
+    "dewy makeup will melt in high humidity": "Use a matte setting spray or switch to powder foundation.",
+    "heavy fabrics are too warm": "Opt for breathable cotton or linen instead.",
+    "too cold for summer clothes": "Add a light jacket or cardigan.",
+    "windy conditions make skirts risky": "Wear shorts underneath or choose pants instead.",
   };
 
-  const advice = issues.map(i => adviceMap[i] || i).join(' ');
+  const advice = issues.map((i) => adviceMap[i] || i).join(" ");
 
   return { verdict, advice };
 }
@@ -196,26 +197,20 @@ Deno.serve(async (req: Request) => {
   }
 
   if (req.method !== "POST") {
-    return new Response(
-      JSON.stringify({ error: "Method not allowed" }),
-      {
-        status: 405,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
-    );
+    return new Response(JSON.stringify({ error: "Method not allowed" }), {
+      status: 405,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 
   try {
     const body: RequestBody = await req.json();
 
-    if (!body.outfit || typeof body.lat !== 'number' || typeof body.lon !== 'number') {
-      return new Response(
-        JSON.stringify({ error: "Missing required fields: outfit, lat, lon" }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
+    if (!body.outfit || typeof body.lat !== "number" || typeof body.lon !== "number") {
+      return new Response(JSON.stringify({ error: "Missing required fields: outfit, lat, lon" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     const weather = await fetchWeather(body.lat, body.lon);
@@ -230,16 +225,13 @@ Deno.serve(async (req: Request) => {
       {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
+      },
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
-    return new Response(
-      JSON.stringify({ error: message }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
-    );
+    return new Response(JSON.stringify({ error: message }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 });
